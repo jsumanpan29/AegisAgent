@@ -1,0 +1,50 @@
+# Go build outputs
+/bin/
+/build/
+/supervisor.exe
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go test binary
+*.test
+
+# Go modules
+/go.sum
+/go.mod
+# If you want to track go.mod/go.sum, remove the above lines
+
+# Logs
+*.log
+agent.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# Temporary files
+*.tmp
+*.temp
+
+# Node/npm (if you ever have front-end code)
+node_modules/
+
+# Rust module outputs
+modules/*/target/
+modules/*/Cargo.lock
+
+# Kernel driver outputs
+kernel/build/
+kernel/bin/
+kernel/*.pdb
+kernel/*.obj
