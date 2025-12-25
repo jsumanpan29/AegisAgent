@@ -4,14 +4,34 @@ import (
 	"log"
 )
 
-type ModuleManager struct{}
-
-func (m *ModuleManager) StartModules(modules []string) {
-	log.Println("Starting modules:", modules)
-	// TODO: implement module start logic
+type Module struct {
+	Name string
+	Path string
 }
 
+type ModuleManager struct {
+	Modules []Module
+}
+
+// Constructor
+func NewModuleManager() *ModuleManager {
+	return &ModuleManager{}
+}
+
+// Start modules
+func (m *ModuleManager) StartModules(modules []Module) {
+	m.Modules = modules
+	for _, mod := range modules {
+		log.Printf("Starting module: %s", mod.Name)
+		// TODO: implement actual process start
+	}
+}
+
+// Stop modules
 func (m *ModuleManager) StopModules() {
-	log.Println("Stopping all modules")
-	// TODO: implement module stop logic
+	for _, mod := range m.Modules {
+		log.Printf("Stopping module: %s", mod.Name)
+		// TODO: implement actual process stop
+	}
+	m.Modules = nil
 }
