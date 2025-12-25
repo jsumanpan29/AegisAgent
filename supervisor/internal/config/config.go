@@ -1,25 +1,25 @@
 package config
 
 import (
-	"encoding/json"
 	"os"
+
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	Modules []string `json:"modules"`
-	LogPath string   `json:"log_path"`
+	Modules           []string `yaml:"modules"`
+	LogPath           string   `yaml:"log_path"`
+	HeartbeatInterval int      `yaml:"heartbeat_interval"`
 }
 
 func LoadConfig(path string) (*Config, error) {
-	file, err := os.Open(path)
+	file, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
 
 	cfg := &Config{}
-	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(cfg); err != nil {
+	if err := yaml.Unmarshal(file, cfg); err != nil {
 		return nil, err
 	}
 	return cfg, nil
