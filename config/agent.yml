@@ -1,0 +1,4 @@
+modules:
+  - process_monitor
+log_path: "logs/agent.log"
+heartbeat_interval: 5
