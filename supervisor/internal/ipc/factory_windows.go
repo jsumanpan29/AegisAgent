@@ -6,5 +6,5 @@ package ipc
 // NewIPC creates a platform-specific IPC client.
 // On Windows, this creates a Named Pipe client.
 func NewIPC(name string) (IPC, error) {
-	return NewNamedPipeIPC(name)
+	return NewNamedPipeServer(name)
 }
