@@ -30,6 +30,22 @@ func (p *Program) Start(s service.Service) error {
 		p.config = cfg
 	}
 
+	// Initialize IPC clients per module
+	p.ipcClients = make(map[string]ipc.IPC)
+	if p.config != nil {
+		for _, modName := range p.config.Modules {
+			ipcName := "AegisPipe_" + modName
+			client, err := ipc.NewIPC(ipcName)
+			if err != nil {
+				log.Printf("Failed to create IPC server for module %s: %v", modName, err)
+				continue
+			}
+			p.ipcClients[modName] = client
+			// Start goroutine to receive messages from this module
+			go p.handleModuleMessages(modName, client)
+		}
+	}
+
 	// Load modules manager
 	p.moduleMgr = modules.NewModuleManager()
 	if p.config != nil {
@@ -42,22 +58,6 @@ func (p *Program) Start(s service.Service) error {
 			}
 		}
 		p.moduleMgr.StartModules(moduleList)
-	}
-
-	// Initialize IPC clients per module
-	p.ipcClients = make(map[string]ipc.IPC)
-	if p.config != nil {
-		for _, modName := range p.config.Modules {
-			ipcName := "AegisPipe_" + modName
-			client, err := ipc.NewIPC(ipcName)
-			if err != nil {
-				log.Printf("Failed to connect IPC for module %s: %v", modName, err)
-				continue
-			}
-			p.ipcClients[modName] = client
-			// Start goroutine to receive messages from this module
-			go p.handleModuleMessages(modName, client)
-		}
 	}
 
 	go p.run()
