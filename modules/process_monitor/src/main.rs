@@ -90,6 +90,44 @@ impl NamedPipeClient {
 
         Ok(())
     }
+
+    fn receive_message(&self) -> Result<String, String> {
+        use winapi::um::fileapi::ReadFile;
+        use winapi::um::namedpipeapi::PeekNamedPipe;
+        
+        let mut bytes_available: u32 = 0;
+        
+        unsafe {
+            let res = PeekNamedPipe(
+                self.handle,
+                std::ptr::null_mut(),
+                0,
+                std::ptr::null_mut(),
+                &mut bytes_available,
+                std::ptr::null_mut(),
+            );
+            
+            if res == 0 || bytes_available == 0 {
+                return Err("No data available".to_string());
+            }
+
+            let mut buf = [0u8; 4096];
+            let mut bytes_read: u32 = 0;
+            let result = ReadFile(
+                self.handle,
+                buf.as_mut_ptr() as *mut _,
+                buf.len() as u32,
+                &mut bytes_read,
+                std::ptr::null_mut(),
+            );
+
+            if result == 0 {
+                return Err("Failed to read from pipe".to_string());
+            }
+            
+            Ok(String::from_utf8_lossy(&buf[..bytes_read as usize]).to_string())
+        }
+    }
 }
 
 #[cfg(windows)]
@@ -184,6 +222,14 @@ fn main() {
         // Send report to supervisor if connected
         #[cfg(windows)]
         if let Some(ref client) = pipe_client {
+            // Check for Ping and respond with Pong
+            if let Ok(msg) = client.receive_message() {
+                if msg.trim() == "Ping" {
+                    info!("Received Ping from supervisor, sending Pong");
+                    let _ = client.send_message("Pong");
+                }
+            }
+
             match serde_json::to_string(&report) {
                 Ok(json) => {
                     if let Err(e) = client.send_message(&json) {
