@@ -53,8 +53,9 @@ func (p *Program) Start(s service.Service) error {
 		moduleList := make([]modules.Module, len(p.config.Modules))
 		for i, modName := range p.config.Modules {
 			moduleList[i] = modules.Module{
-				Name: modName,
-				Path: modName, // TODO: configure actual module paths
+				Name:            modName,
+				Path:            modName, // TODO: configure actual module paths
+				LastPingSuccess: time.Now(),
 			}
 		}
 		p.moduleMgr.StartModules(moduleList)
@@ -77,7 +78,18 @@ func (p *Program) handleModuleMessages(moduleName string, client ipc.IPC) {
 				continue
 			}
 			if msg != nil {
-				log.Printf("[%s] Received message: %s", moduleName, string(msg))
+				text := string(msg)
+				if text == "Pong" {
+					// Update LastPingSuccess for this module
+					for i := range p.moduleMgr.Modules {
+						if p.moduleMgr.Modules[i].Name == moduleName {
+							p.moduleMgr.Modules[i].LastPingSuccess = time.Now()
+							break
+						}
+					}
+				} else {
+					log.Printf("[%s] Received message: %s", moduleName, text)
+				}
 			}
 		}
 	}
@@ -92,7 +104,26 @@ func (p *Program) run() {
 		select {
 		case <-ticker.C:
 			log.Println("Aegis Agent heartbeat...")
-			// TODO: Monitor module statuses, restart if necessary
+
+			// Send Pings and check for timeouts
+			for _, mod := range p.moduleMgr.Modules {
+				if client, ok := p.ipcClients[mod.Name]; ok {
+					// Send Ping
+					_ = client.Send([]byte("Ping"))
+				}
+
+				// Check timeout (30s)
+				if time.Since(mod.LastPingSuccess) > 30*time.Second {
+					log.Printf("[CRITICAL] Liveness check failed for %s (No Pong for 30s). Restarting.", mod.Name)
+					// We can't easily restart just one module from here without modifying manager.go
+					// but for MVP, let's log it.
+					// Actually, supervisor loop naturally restarts if process dies.
+					// If it's deadlocked, we MUST kill it.
+					if mod.Cmd != nil && mod.Cmd.Process != nil {
+						mod.Cmd.Process.Kill()
+					}
+				}
+			}
 		case <-p.exit:
 			log.Println("Aegis Agent shutting down main loop")
 			return
